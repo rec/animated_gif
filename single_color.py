@@ -2,36 +2,34 @@
 
 import imageio, PIL.Image, os, sys
 
-filename = 'animated.gif'
-root = '/tmp/gif_writer'
+def add(color, filename):
+    PIL.Image.new('RGB', (64, 64), color).save(filename)
+    frames.append(filename)
 
-frames = 'black.gif', 'red.gif', 'green.gif', 'blue.gif', 'white.gif'
 
-PIL.Image.new('RGB', (64, 64), (0, 0, 0)).save('black.gif')
-PIL.Image.new('RGB', (64, 64), (255, 0, 0)).save('red.gif')
-PIL.Image.new('RGB', (64, 64), (0, 255, 0)).save('green.gif')
-PIL.Image.new('RGB', (64, 64), (0, 0, 255)).save('blue.gif')
-PIL.Image.new('RGB', (64, 64), (255, 255, 255)).save('white.gif')
+frames = []
 
-strategy = (sys.argv + ['simple'])[1]
+# Create five frames
+add((0, 0, 0), 'black.gif')
+add((255, 0, 0), 'red.gif')
+add((0, 255, 0), 'green.gif')
+add((0, 0, 255), 'blue.gif')
+add((255, 255, 255), 'white.gif')
 
-if strategy == 'simple':
-    images = [imageio.imread(f) for f in frames]
-    imageio.mimsave(filename, images, duration=1)
-    # https://stackoverflow.com/a/35943809/43839
-    # The resulting animation is incorrectly grayscale
+# Use PIL to write the animated GIF.
+# This GIF is *right*: the expected five-frame RGB GIF.
+images = [PIL.Image.open(f) for f in frames]
+image = images.pop(0)
+image.save('pil.gif', save_all=True, append_images=images)
 
-elif strategy == 'write':
-    with imageio.get_writer(filename, mode='I', duration=0.5) as writer:
-        for f in frames:
-            writer.append_data(imageio.imread(f))
-    # The resulting animation is incorrectly grayscale
+# Use imageio to write the animated GIF.
+# See https://stackoverflow.com/a/35943809/43839
+# This GIF is *wrong*: the red, green and blue frames are shades of gray.
+images = [imageio.imread(f) for f in frames]
+imageio.mimsave('simple.gif', images)
 
-elif strategy == 'pil':
-    images = [PIL.Image.open(f) for f in frames]
-    image = images.pop(0)
-    image.save(filename, save_all=True, append_images=images)
-    # The resulting animation is correct
-
-else:
-    raise ValueError
+# Alternate method: use imageio.get_writer.
+# This GIF is also grayscale and *wrong*.
+with imageio.get_writer('writer.gif', mode='I') as writer:
+    for f in frames:
+        writer.append_data(imageio.imread(f))
